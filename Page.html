@@ -1,0 +1,73 @@
+<script type="module">
+  import {
+    LitElement,
+    html,
+  } from "https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js";
+
+  function googleScriptRun(name, ...args) {
+    return new Promise(function (resolve, reject) {
+      console.log(
+        `Executes the server-side Apps Script function "${name}"`,
+        args
+      );
+      google.script.run
+        .withSuccessHandler(function (...e) {
+          console.log(
+            `The server-side function "${name}" returns successfully.`,
+            e
+          );
+          resolve(...e);
+        })
+        .withFailureHandler(function (...e) {
+          console.log(
+            `The server-side function "${name}" throws an exception.`,
+            e
+          );
+          reject(...e);
+        })
+        [name](...args);
+    });
+  }
+
+  export class MyElement extends LitElement {
+    static properties = {
+      list: {},
+    };
+
+    constructor() {
+      super();
+      this.list = [];
+      googleScriptRun("getCalendarList").then((result) => (this.list = result));
+    }
+
+    render() {
+      return html`
+        <label for="calendar-select">Choose a calendar:</label>
+        <select
+          name="calendar"
+          id="calendar-select"
+          @change=${this.handleChange}
+        >
+          <option value="">--Please choose an calendar--</option>
+          ${this.list.map((calendar, index) => {
+            return html`
+              <option value="${calendar.id}">${calendar.name}</option>
+            `;
+          })}
+        </select>
+      `;
+    }
+
+    handleChange(event) {
+      const calendar = this.list.find((cal) => cal.id === event.target.value);
+      googleScriptRun("setTargetCalendar", calendar);
+    }
+  }
+  customElements.define("my-element", MyElement);
+</script>
+
+<my-element></my-element>
+
+Hello, world!
+
+<input type="button" value="Close" onclick="google.script.host.close()" />
