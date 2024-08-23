@@ -2,7 +2,7 @@
   import {
     LitElement,
     html,
-  } from "https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js";
+  } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 
   function googleScriptRun(name, ...args) {
     return new Promise(function (resolve, reject) {
@@ -29,45 +29,104 @@
     });
   }
 
-  export class MyElement extends LitElement {
+  export class SyncSettings extends LitElement {
     static properties = {
       list: {},
+      start: {},
+      end: {},
     };
 
     constructor() {
       super();
       this.list = [];
-      googleScriptRun("getCalendarList").then((result) => (this.list = result));
+      googleScriptRun('getCalendarList').then((result) => {
+        this.list = result;
+      });
+      this.start = new Date();
+      this.end = new Date();
+      googleScriptRun('getDateRange').then((result) => {
+        this.start = new Date(result.start || this.start);
+        this.end = new Date(result.end || this.end);
+      });
     }
 
     render() {
       return html`
-        <label for="calendar-select">Choose a calendar:</label>
-        <select
-          name="calendar"
-          id="calendar-select"
-          @change=${this.handleChange}
-        >
-          <option value="">--Please choose an calendar--</option>
-          ${this.list.map((calendar, index) => {
-            return html`
-              <option value="${calendar.id}">${calendar.name}</option>
-            `;
-          })}
-        </select>
+        <form
+          id="settings"
+          name="settings">
+          <div>
+            <label for="calendar-select">同期するカレンダー</label>
+            <select
+              name="calendar"
+              id="calendar-select">
+              <option value=""></option>
+              ${this.list.map((calendar, index) => {
+                if (calendar.selected) {
+                  return html`
+                    <option
+                      value="${calendar.id}"
+                      selected>
+                      ${calendar.name}
+                    </option>
+                  `;
+                } else {
+                  return html`
+                    <option value="${calendar.id}">${calendar.name}</option>
+                  `;
+                }
+              })}
+            </select>
+          </div>
+          <div>
+            <label for="start">開始日時</label>
+            <input
+              type="date"
+              id="start"
+              name="range-start"
+              value="${this.toDateStringForInput(this.start)}" />
+          </div>
+          <div>
+            <label for="end">終了日時</label>
+            <input
+              type="date"
+              id="end"
+              name="range-end"
+              value="${this.toDateStringForInput(this.end)}" />
+          </div>
+          <div>
+            <button
+              type="button"
+              @click=${this.handleClickSaveButton}>
+              設定を保存
+            </button>
+          </div>
+        </form>
       `;
     }
 
-    handleChange(event) {
-      const calendar = this.list.find((cal) => cal.id === event.target.value);
-      googleScriptRun("setTargetCalendar", calendar);
+    handleClickSaveButton(event) {
+      const calendarSelect = this.renderRoot.querySelector('#calendar-select');
+      const calendar = this.list.find((cal) => cal.id === calendarSelect.value);
+      const rangeStart = this.renderRoot.querySelector('#start');
+      const rangeEnd = this.renderRoot.querySelector('#end');
+
+      googleScriptRun(
+        'setSettings',
+        calendar,
+        rangeStart.valueAsNumber,
+        rangeEnd.valueAsNumber
+      );
+    }
+
+    toDateStringForInput(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
   }
-  customElements.define("my-element", MyElement);
+  customElements.define('sync-settings', SyncSettings);
 </script>
 
-<my-element></my-element>
-
-Hello, world!
-
-<input type="button" value="Close" onclick="google.script.host.close()" />
+<sync-settings></sync-settings>

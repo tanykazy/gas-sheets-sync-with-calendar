@@ -2,5 +2,10 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "[html]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode"
-    }
+    },
+    "prettier.singleQuote": true,
+    "prettier.singleAttributePerLine": true,
+    "prettier.bracketSameLine": true,
+    "prettier.arrowParens": "always",
+    "prettier.jsxSingleQuote": true
 }
