@@ -18,14 +18,19 @@ function getEventList(calendar, start, end) {
   const calendarEvent = CalendarApp.getCalendarById(calendar.id)
     .getEvents(new Date(start), new Date(end));
 
-  const list = [];
+  const list = [[
+    'Creators',
+    'Start Time',
+    'Title',
+    'Description',
+  ]];
 
   for (const e of calendarEvent) {
     list.push([
       e.getCreators(),
-      e.getDescription(),
       e.getStartTime(),
-      e.getTitle()
+      e.getTitle(),
+      e.getDescription(),
     ]);
   }
 
@@ -100,6 +105,19 @@ function getDateRange() {
   };
 }
 
+function updateSettings(calendar, start, end) {
+  if (!calendar) {
+    clearSettings();
+    deleteTrigger();
+
+    return;
+  }
+
+  setSettings(calendar, start, end);
+  deleteTrigger();
+  createTrigger(calendar);
+}
+
 function setSettings(calendar, start, end) {
   PropertiesService.getDocumentProperties()
     .setProperty("targetCalendar", JSON.stringify(calendar));
@@ -107,4 +125,57 @@ function setSettings(calendar, start, end) {
     .setProperty("rangeStart", JSON.stringify(start));
   PropertiesService.getDocumentProperties()
     .setProperty("rangeEnd", JSON.stringify(end));
+}
+
+function clearSettings() {
+  PropertiesService.getDocumentProperties()
+    .deleteProperty("targetCalendar");
+  PropertiesService.getDocumentProperties()
+    .deleteProperty("rangeStart");
+  PropertiesService.getDocumentProperties()
+    .deleteProperty("rangeEnd");
+}
+
+/**
+ * ユーザーのカレンダーの予定が作成、更新、削除されたときに配信されるトリガーを作成する
+ */
+function createTrigger(calendar) {
+  // 新しいトリガーを作成
+  const trigger = ScriptApp.newTrigger(onEventUpdated.name)
+    .forUserCalendar(calendar.id)
+    .onEventUpdated()
+    .create();
+
+  // トリガーIDをユーザーのプロパティに保存
+  PropertiesService.getUserProperties()
+    .setProperty('triggerUniqueId', trigger.getUniqueId());
+
+  // 作成したトリガーを返す
+  return trigger;
+}
+
+function deleteTrigger() {
+  // 既存のトリガーを削除
+  const property = PropertiesService.getUserProperties()
+    .getProperty('triggerUniqueId');
+
+  if (property !== null) {
+    const triggers = ScriptApp.getProjectTriggers();
+    for (const trigger of triggers) {
+      if (trigger.getUniqueId() === property) {
+        ScriptApp.deleteTrigger(trigger);
+
+        break;
+      }
+    }
+  }
+}
+
+/**
+ * ユーザーのカレンダーイベントが更新 (作成、編集、または削除) されたときに呼ばれる関数
+ * @see {@link https://developers.google.com/apps-script/guides/triggers/events#events}
+ */
+function onEventUpdated(event) {
+  // カレンダーの情報をシートに書き込む関数を呼び出す
+  syncEvents();
 }
