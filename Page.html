@@ -45,8 +45,25 @@
       this.start = new Date();
       this.end = new Date();
       googleScriptRun('getDateRange').then((result) => {
-        this.start = new Date(result.start || this.start);
-        this.end = new Date(result.end || this.end);
+        const now = new Date();
+        if (!result.start) {
+          if (now.getMonth() < 3) {
+            this.start.setFullYear(now.getFullYear() - 1);
+          }
+          this.start.setMonth(3);
+          this.start.setDate(1);
+        } else {
+          this.start = new Date(result.start);
+        }
+        if (!result.end) {
+          if (now.getMonth() > 2) {
+            this.end.setFullYear(now.getFullYear() + 1);
+          }
+          this.end.setMonth(3);
+          this.end.setDate(0);
+        } else {
+          this.end = new Date(result.end);
+        }
       });
     }
 
