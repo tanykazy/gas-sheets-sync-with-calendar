@@ -1,8 +1,8 @@
 function onOpen() {
   SpreadsheetApp.getUi()
-    .createMenu("Sync with Calendar")
-    .addItem("更新", syncEvents.name)
+    .createMenu("カレンダー")
     .addItem("同期の管理", showSidebar.name)
+    .addItem("更新", syncEvents.name)
     .addToUi();
 }
 
