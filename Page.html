@@ -116,7 +116,9 @@
         calendar,
         rangeStart.valueAsNumber,
         rangeEnd.valueAsNumber
-      );
+      ).then(() => {
+        google.script.host.close();
+      });
     }
 
     toDateStringForInput(date) {
