@@ -116,6 +116,7 @@ function updateSettings(calendar, start, end) {
   setSettings(calendar, start, end);
   deleteTrigger();
   createTrigger(calendar);
+  syncEvents();
 }
 
 function setSettings(calendar, start, end) {
