@@ -1,151 +1,196 @@
-<script type="module">
-  import {
-    LitElement,
-    html,
-  } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
-
-  function googleScriptRun(name, ...args) {
-    return new Promise(function (resolve, reject) {
-      console.log(
-        `Executes the server-side Apps Script function "${name}"`,
-        args
-      );
-      google.script.run
-        .withSuccessHandler(function (...e) {
-          console.log(
-            `The server-side function "${name}" returns successfully.`,
-            e
-          );
-          resolve(...e);
-        })
-        .withFailureHandler(function (...e) {
-          console.log(
-            `The server-side function "${name}" throws an exception.`,
-            e
-          );
-          reject(...e);
-        })
-        [name](...args);
-    });
-  }
-
-  export class SyncSettings extends LitElement {
-    static properties = {
-      list: {},
-      start: {},
-      end: {},
-    };
-
-    constructor() {
-      super();
-      this.list = [];
-      googleScriptRun('getCalendarList').then((result) => {
-        this.list = result;
-      });
-      this.start = new Date();
-      this.end = new Date();
-      googleScriptRun('getDateRange').then((result) => {
-        const now = new Date();
-        if (!result.start) {
-          if (now.getMonth() < 3) {
-            this.start.setFullYear(now.getFullYear() - 1);
-          }
-          this.start.setMonth(3);
-          this.start.setDate(1);
-        } else {
-          this.start = new Date(result.start);
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <link
+      rel="stylesheet"
+      href="https://ssl.gstatic.com/docs/script/css/add-ons1.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet" />
+    <script type="importmap">
+      {
+        "imports": {
+          "@material/web/": "https://esm.run/@material/web/"
         }
-        if (!result.end) {
-          if (now.getMonth() > 2) {
-            this.end.setFullYear(now.getFullYear() + 1);
-          }
-          this.end.setMonth(3);
-          this.end.setDate(0);
-        } else {
-          this.end = new Date(result.end);
+      }
+    </script>
+    <script type="module">
+      import '@material/web/all.js';
+      import { styles as typescaleStyles } from '@material/web/typography/md-typescale-styles.js';
+      import {
+        LitElement,
+        html,
+        css,
+      } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+
+      document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
+
+      function googleScriptRun(name, ...args) {
+        return new Promise(function (resolve, reject) {
+          console.log(
+            `Executes the server-side Apps Script function "${name}"`,
+            args
+          );
+          google.script.run
+            .withSuccessHandler(function (...e) {
+              console.log(
+                `The server-side function "${name}" returns successfully.`,
+                e
+              );
+              resolve(...e);
+            })
+            .withFailureHandler(function (...e) {
+              console.log(
+                `The server-side function "${name}" throws an exception.`,
+                e
+              );
+              reject(...e);
+            })
+            [name](...args);
+        });
+      }
+
+      export class SyncSettings extends LitElement {
+        constructor() {
+          super();
+          this.list = [];
+          googleScriptRun('getCalendarList').then((result) => {
+            this.list = result;
+          });
+          this.start = new Date();
+          this.end = new Date();
+          googleScriptRun('getDateRange').then((result) => {
+            const now = new Date();
+            if (!result.start) {
+              if (now.getMonth() < 3) {
+                this.start.setFullYear(now.getFullYear() - 1);
+              }
+              this.start.setMonth(3);
+              this.start.setDate(1);
+            } else {
+              this.start = new Date(result.start);
+            }
+            if (!result.end) {
+              if (now.getMonth() > 2) {
+                this.end.setFullYear(now.getFullYear() + 1);
+              }
+              this.end.setMonth(3);
+              this.end.setDate(0);
+            } else {
+              this.end = new Date(result.end);
+            }
+          });
         }
-      });
-    }
 
-    render() {
-      return html`
-        <form
-          id="settings"
-          name="settings">
-          <div>
-            <label for="calendar-select">同期するカレンダー</label>
-            <select
-              name="calendar"
-              id="calendar-select">
-              <option value=""></option>
-              ${this.list.map((calendar, index) => {
-                if (calendar.selected) {
-                  return html`
-                    <option
-                      value="${calendar.id}"
-                      selected>
-                      ${calendar.name}
-                    </option>
-                  `;
-                } else {
-                  return html`
-                    <option value="${calendar.id}">${calendar.name}</option>
-                  `;
-                }
-              })}
-            </select>
-          </div>
-          <div>
-            <label for="start">開始日時</label>
-            <input
-              type="date"
-              id="start"
-              name="range-start"
-              value="${this.toDateStringForInput(this.start)}" />
-          </div>
-          <div>
-            <label for="end">終了日時</label>
-            <input
-              type="date"
-              id="end"
-              name="range-end"
-              value="${this.toDateStringForInput(this.end)}" />
-          </div>
-          <div>
-            <button
-              type="button"
-              @click=${this.handleClickSaveButton}>
-              設定を保存
-            </button>
-          </div>
-        </form>
-      `;
-    }
+        static properties = {
+          list: {},
+          start: {},
+          end: {},
+        };
 
-    handleClickSaveButton(event) {
-      const calendarSelect = this.renderRoot.querySelector('#calendar-select');
-      const calendar = this.list.find((cal) => cal.id === calendarSelect.value);
-      const rangeStart = this.renderRoot.querySelector('#start');
-      const rangeEnd = this.renderRoot.querySelector('#end');
+        static styles = css`
+          #calendar-select {
+            width: 100%;
+          }
+          .list-item {
+            padding-top: 1em;
+          }
+        `;
 
-      googleScriptRun(
-        'updateSettings',
-        calendar,
-        rangeStart.valueAsNumber,
-        rangeEnd.valueAsNumber
-      ).then(() => {
-        google.script.host.close();
-      });
-    }
+        render() {
+          return html`
+            <form
+              id="settings"
+              name="settings">
+              <md-list>
+                <md-list-item class="list-item">
+                  <md-outlined-select
+                    name="calendar"
+                    id="calendar-select"
+                    label="同期するカレンダー">
+                    <md-select-option
+                      aria-label="blank"
+                      value="">
+                    </md-select-option>
+                    ${this.list.map((calendar, index) => {
+                      if (calendar.selected) {
+                        return html`
+                          <md-select-option
+                            value="${calendar.id}"
+                            selected>
+                            <div slot="headline">${calendar.name}</div>
+                          </md-select-option>
+                        `;
+                      } else {
+                        return html`
+                          <md-select-option value="${calendar.id}">
+                            <div slot="headline">${calendar.name}</div>
+                          </md-select-option>
+                        `;
+                      }
+                    })}
+                  </md-outlined-select>
+                </md-list-item>
+                <md-list-item>
+                  <label for="start">開始日時</label>
+                  <input
+                    type="date"
+                    id="start"
+                    name="range-start"
+                    value="${this.toDateStringForInput(this.start)}" />
+                </md-list-item>
+                <md-list-item>
+                  <label for="end">終了日時</label>
+                  <input
+                    type="date"
+                    id="end"
+                    name="range-end"
+                    value="${this.toDateStringForInput(this.end)}" />
+                </md-list-item>
+                <md-list-item>
+                  <md-filled-button
+                    type="button"
+                    @click=${this.handleClickSaveButton}>
+                    設定を保存
+                  </md-filled-button>
+                </md-list-item>
+              </md-list>
+            </form>
+          `;
+        }
 
-    toDateStringForInput(date) {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-  }
-  customElements.define('sync-settings', SyncSettings);
-</script>
+        handleClickSaveButton(event) {
+          const calendarSelect =
+            this.renderRoot.querySelector('#calendar-select');
+          const calendar = this.list.find(
+            (cal) => cal.id === calendarSelect.value
+          );
+          const rangeStart = this.renderRoot.querySelector('#start');
+          const rangeEnd = this.renderRoot.querySelector('#end');
 
-<sync-settings></sync-settings>
+          googleScriptRun(
+            'updateSettings',
+            calendar,
+            rangeStart.valueAsNumber,
+            rangeEnd.valueAsNumber
+          ).then(() => {
+            google.script.host.close();
+          });
+        }
+
+        toDateStringForInput(date) {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        }
+      }
+      customElements.define('sync-settings', SyncSettings);
+    </script>
+  </head>
+
+  <body>
+    <sync-settings></sync-settings>
+  </body>
+</html>
